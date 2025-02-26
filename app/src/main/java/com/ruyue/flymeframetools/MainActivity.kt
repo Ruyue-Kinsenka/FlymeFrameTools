@@ -16,22 +16,42 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
 import androidx.core.content.edit
 import kotlinx.coroutines.launch
 import rikka.shizuku.Shizuku
 import rikka.shizuku.Shizuku.OnRequestPermissionResultListener
 
-// 定义列表类型
+// 颜色定义
+private val GrayWhiteTheme = lightColorScheme(
+    primary = Color(0xFF616161),
+    secondary = Color(0xFF757575),
+    surface = Color(0xFFFFFFFF),
+    surfaceVariant = Color(0xFFF5F5F5),
+    background = Color(0xFFFAFAFA),
+    onPrimary = Color.White,
+    onSurface = Color(0xFF212121),
+    onBackground = Color(0xFF212121)
+)
+
+// super超分，frame插帧
 enum class ListType {
     FRAME_INTERPOLATION,
     SUPER_RESOLUTION
@@ -39,9 +59,7 @@ enum class ListType {
 
 class MainActivity : ComponentActivity() {
     private lateinit var prefs: SharedPreferences
-    private val shizukuListener = OnRequestPermissionResultListener { requestCode, grantResult ->
-        if (requestCode == 100) handlePermissionResult(grantResult)
-    }
+    private val shizukuListener = OnRequestPermissionResultListener { _, _ -> }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -49,7 +67,21 @@ class MainActivity : ComponentActivity() {
         Shizuku.addRequestPermissionResultListener(shizukuListener)
 
         setContent {
-            AppEntryPoint()
+            MaterialTheme(
+                colorScheme = GrayWhiteTheme,
+                shapes = MaterialTheme.shapes.copy(
+                    small = RoundedCornerShape(16.dp),
+                    medium = RoundedCornerShape(24.dp),
+                    large = RoundedCornerShape(32.dp)
+                )
+            ) {
+                Surface(
+                    modifier = Modifier.fillMaxSize(),
+                    color = MaterialTheme.colorScheme.background
+                ) {
+                    AppEntryPoint()
+                }
+            }
         }
     }
 
@@ -57,22 +89,23 @@ class MainActivity : ComponentActivity() {
         Shizuku.removeRequestPermissionResultListener(shizukuListener)
         super.onDestroy()
     }
-
-    private fun handlePermissionResult(result: Int) {}
 }
 
-// 引导流程
 @Composable
 private fun OnboardingFlow(onComplete: () -> Unit) {
     var currentStep by remember { mutableStateOf(1) }
     val context = LocalContext.current
 
-    Surface(color = MaterialTheme.colorScheme.background) {
-        Box(Modifier.fillMaxSize()) {
+    Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surface)) {
+        Column(
+            modifier = Modifier.fillMaxSize(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
             when (currentStep) {
                 1 -> OnboardingPage(
-                    title = "欢迎使用帧率优化工具",
-                    desc = "本工具需要Shizuku权限管理系统级设置",
+                    title = "FlymeFrameTools",
+                    desc = "由Shizuku驱动的Frame管理",
                     imageId = R.drawable.test,
                     buttonText = "继续",
                     onAction = { currentStep++ }
@@ -83,16 +116,83 @@ private fun OnboardingFlow(onComplete: () -> Unit) {
                 )
                 3 -> OnboardingPage(
                     title = "准备就绪",
-                    desc = "已完成所有必要设置\n现在可以开始配置优化方案",
+                    desc = "现在可以开始管理您的应用列表",
                     imageId = R.drawable.test1,
-                    buttonText = "开始使用",
-                    onAction = {
-                        onComplete()
-                    }
+                    buttonText = "开始体验",
+                    onAction = onComplete
                 )
             }
+        }
+    }
+}
 
-            StepIndicator(currentStep, 3)
+@Composable
+private fun OnboardingPage(
+    title: String,
+    desc: String,
+    imageId: Int,
+    buttonText: String,
+    onAction: () -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .padding(24.dp)
+            .fillMaxWidth(),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Card(
+            modifier = Modifier
+                .height(280.dp)
+                .fillMaxWidth()
+                .shadow(8.dp, RoundedCornerShape(24.dp)),
+            shape = RoundedCornerShape(24.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceVariant
+            )
+        ) {
+            Image(
+                painter = painterResource(imageId),
+                contentDescription = null,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxSize()
+            )
+        }
+
+        Spacer(Modifier.height(32.dp))
+
+        Text(
+            text = title,
+            style = MaterialTheme.typography.headlineLarge.copy(
+                color = MaterialTheme.colorScheme.primary,
+                fontWeight = FontWeight.Bold
+            )
+        )
+
+        Spacer(Modifier.height(8.dp))
+
+        Text(
+            text = desc,
+            style = MaterialTheme.typography.bodyLarge.copy(
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f)
+            ),
+            modifier = Modifier.padding(horizontal = 24.dp),
+            textAlign = TextAlign.Center
+        )
+
+        Spacer(Modifier.height(32.dp))
+
+        Button(
+            onClick = onAction,
+            modifier = Modifier
+                .height(48.dp)
+                .width(200.dp),
+            shape = RoundedCornerShape(24.dp),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary
+            )
+        ) {
+            Text(buttonText, style = MaterialTheme.typography.labelLarge)
         }
     }
 }
@@ -113,7 +213,6 @@ private fun AppEntryPoint() {
     }
 }
 
-// 主界面
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun MainContent() {
@@ -124,9 +223,6 @@ private fun MainContent() {
     var superList by remember { mutableStateOf<List<String>>(emptyList()) }
     var showDialog by remember { mutableStateOf<ListType?>(null) }
     val coroutineScope = rememberCoroutineScope()
-    val context = LocalContext.current
-    val hasShizukuPermission = remember { mutableStateOf(checkShizukuPermission()) }
-    var showPermissionDialog by remember { mutableStateOf(!hasShizukuPermission.value) }
 
     LaunchedEffect(Unit) {
         loadAllLists(
@@ -135,45 +231,50 @@ private fun MainContent() {
         )
     }
 
-    if (showPermissionDialog) {
-        AlertDialog(
-            onDismissRequest = { showPermissionDialog = false },
-            title = { Text("需要Shizuku权限") },
-            text = { Text("本应用需要Shizuku权限来管理系统设置") },
-            confirmButton = {
-                TextButton(onClick = {
-                    // 请求Shizuku权限
-                    Shizuku.requestPermission(100)
-                }) {
-                    Text("立即授权")
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showPermissionDialog = false }) {
-                    Text("取消")
-                }
-            }
-        )
-    }
-
     Scaffold(
-        topBar = { TopAppBar(title = { Text("Flyme视效Pro") }) },
+        topBar = {
+            CenterAlignedTopAppBar(
+                title = {
+                    Text(
+                        "Flyme视效Pro",
+                        style = MaterialTheme.typography.headlineMedium.copy(
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    )
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = Color.Transparent,
+                    titleContentColor = MaterialTheme.colorScheme.primary
+                )
+            )
+        },
         bottomBar = {
-            NavigationBar {
+            NavigationBar(
+                modifier = Modifier
+                    .padding(8.dp)
+                    .shadow(8.dp, RoundedCornerShape(24.dp)),
+                containerColor = MaterialTheme.colorScheme.surfaceVariant
+            ) {
                 tabs.forEachIndexed { index, title ->
                     NavigationBarItem(
                         selected = selectedTab == index,
                         onClick = { selectedTab = index },
                         icon = {
                             Icon(
-                                when (index) {
+                                imageVector = when (index) {
                                     0 -> Icons.Default.Home
                                     else -> Icons.Default.Info
                                 },
                                 contentDescription = title
                             )
                         },
-                        label = { Text(title) }
+                        label = {
+                            Text(
+                                title,
+                                style = MaterialTheme.typography.labelMedium
+                            )
+                        }
                     )
                 }
             }
@@ -199,20 +300,6 @@ private fun MainContent() {
                 )
                 1 -> AboutContent()
             }
-        }
-    }
-
-    DisposableEffect(Unit) {
-        val listener = OnRequestPermissionResultListener { requestCode, grantResult ->
-            if (requestCode == 100) {
-                hasShizukuPermission.value = grantResult == PackageManager.PERMISSION_GRANTED
-                showPermissionDialog = !hasShizukuPermission.value
-            }
-        }
-        Shizuku.addRequestPermissionResultListener(listener)
-
-        onDispose {
-            Shizuku.removeRequestPermissionResultListener(listener)
         }
     }
 
@@ -247,109 +334,380 @@ private fun HomeContent(
     onRemoveSuper: (String) -> Unit
 ) {
     Column(Modifier.padding(16.dp)) {
-        ListSection(
+        Text(
+            text = "应用列表管理",
+            style = MaterialTheme.typography.titleLarge.copy(
+                color = MaterialTheme.colorScheme.primary,
+                fontWeight = FontWeight.Bold
+            ),
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+        )
+
+        Spacer(Modifier.height(16.dp))
+
+        DynamicListSection(
             title = "插帧应用列表",
             list = frameList,
             onAdd = onAddFrame,
-            onRemove = onRemoveFrame
+            onRemove = onRemoveFrame,
+            modifier = Modifier.weight(1f)
         )
+
         Spacer(Modifier.height(16.dp))
-        ListSection(
+
+        DynamicListSection(
             title = "超分应用列表",
             list = superList,
             onAdd = onAddSuper,
-            onRemove = onRemoveSuper
+            onRemove = onRemoveSuper,
+            modifier = Modifier.weight(1f)
         )
     }
 }
 
 @Composable
-private fun AboutContent() {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(24.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
-    ) {
-        Image(
-            painter = painterResource(R.drawable.test),
-            contentDescription = "Ruyue",
-            modifier = Modifier
-                .size(120.dp)
-                .background(Color.LightGray, CircleShape)
-        )
-
-        Spacer(Modifier.height(32.dp))
-
-        Text(
-            text = "GitHub",
-            style = MaterialTheme.typography.titleMedium,
-            modifier = Modifier.padding(bottom = 8.dp)
-        )
-
-        val context = LocalContext.current
-        Text(
-            text = "temp",
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.clickable {
-                val intent = Intent(Intent.ACTION_VIEW).apply {
-                    data = Uri.parse("temp")
-                }
-                context.startActivity(intent)
-            }
-        )
-    }
-}
-
-@Composable
-private fun ListSection(
+private fun DynamicListSection(
     title: String,
     list: List<String>,
     onAdd: () -> Unit,
-    onRemove: (String) -> Unit
+    onRemove: (String) -> Unit,
+    modifier: Modifier = Modifier
 ) {
     Card(
-        elevation = CardDefaults.cardElevation(8.dp)
+        modifier = modifier
+            .fillMaxWidth()
+            .shadow(4.dp, RoundedCornerShape(24.dp)),
+        shape = RoundedCornerShape(24.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant
+        )
     ) {
-        Column {
+        Column(Modifier.padding(16.dp)) {
             Row(
-                Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-                horizontalArrangement = Arrangement.SpaceBetween
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Text("$title (${list.size})", style = MaterialTheme.typography.titleMedium)
-                Button(onClick = onAdd) {
-                    Text("添加应用")
+                Text(
+                    text = "$title (${list.size})",
+                    style = MaterialTheme.typography.titleMedium.copy(
+                        color = MaterialTheme.colorScheme.onSurface,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                )
+
+                IconButton(
+                    onClick = onAdd,
+                    modifier = Modifier.size(40.dp)
+                ) {
+                    Icon(
+                        Icons.Default.AddCircle,
+                        contentDescription = "添加",
+                        tint = MaterialTheme.colorScheme.primary
+                    )
                 }
             }
 
-            LazyColumn(Modifier.height(200.dp)) {
+            Spacer(Modifier.height(8.dp))
+
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f)
+            ) {
                 items(list, key = { it }) { pkg ->
                     var isRemoving by remember { mutableStateOf(false) }
                     AnimatedVisibility(
                         visible = !isRemoving,
-                        exit = slideOutVertically() + fadeOut()
+                        exit = shrinkVertically() + fadeOut()
                     ) {
-                        ListItem(
-                            headlineContent = { Text(pkg) },
-                            trailingContent = {
-                                IconButton(onClick = {
-                                    isRemoving = true
-                                    onRemove(pkg)
-                                }) {
-                                    Icon(Icons.Default.Close, "删除")
+                        Card(
+                            modifier = Modifier
+                                .padding(4.dp)
+                                .fillMaxWidth(),
+                            shape = RoundedCornerShape(16.dp),
+                            colors = CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.surface
+                            )
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.padding(12.dp)
+                            ) {
+                                Text(
+                                    text = getAppName(pkg),
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .padding(start = 8.dp),
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    maxLines = 1
+                                )
+
+                                IconButton(
+                                    onClick = {
+                                        isRemoving = true
+                                        onRemove(pkg)
+                                    },
+                                    modifier = Modifier.size(32.dp)
+                                ) {
+                                    Icon(
+                                        Icons.Default.Close,
+                                        contentDescription = "删除",
+                                        tint = MaterialTheme.colorScheme.primary
+                                    )
                                 }
                             }
-                        )
+                        }
                     }
                 }
             }
         }
     }
 }
+
+@Composable
+fun getAppName(pkg: String): String {
+    val context = LocalContext.current
+    return remember(pkg) {
+        try {
+            val pm = context.packageManager
+            pm.getApplicationLabel(pm.getApplicationInfo(pkg, 0)).toString()
+        } catch (e: Exception) {
+            pkg
+        }
+    }
+}
+
+@Composable
+private fun AboutContent() {
+    val context = LocalContext.current
+    var showInstructionsDialog by remember { mutableStateOf(false) }
+    var showSponsorImage by remember { mutableStateOf(false) }
+    val contributors = listOf(
+        Contributor("开发者", "temp"),
+        Contributor("设计支持", "temp"),
+        Contributor("测试团队", "temp")
+    )
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        // 使用说明弹窗
+        if (showInstructionsDialog) {
+            AlertDialog(
+                onDismissRequest = { showInstructionsDialog = false },
+                title = {
+                    Text(
+                        "使用说明",
+                        style = MaterialTheme.typography.headlineSmall
+                    )
+                },
+                text = {
+                    Text(
+                        "1. 在主页添加需要优化的应用\n" +
+                                "2. 确保已授予Shizuku权限\n" +
+                                "3. 列表中的应用将自动应用优化设置",
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                },
+                confirmButton = {
+                    TextButton(
+                        onClick = { showInstructionsDialog = false }
+                    ) {
+                        Text("确定")
+                    }
+                },
+                shape = RoundedCornerShape(24.dp)
+            )
+        }
+
+        // 赞助图片弹窗
+        if (showSponsorImage) {
+            Dialog(onDismissRequest = { showSponsorImage = false }) {
+                Card(
+                    shape = RoundedCornerShape(24.dp),
+                    modifier = Modifier
+                        .width(280.dp)
+                        .height(360.dp)
+                ) {
+                    Image(
+                        painter = painterResource(R.drawable.test),
+                        contentDescription = "赞助二维码",
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                }
+            }
+        }
+
+        // 关于页面内容
+        Card(
+            modifier = Modifier
+                .size(120.dp)
+                .shadow(8.dp, CircleShape),
+            shape = CircleShape
+        ) {
+            Image(
+                painter = painterResource(R.drawable.test),
+                contentDescription = "应用图标",
+                contentScale = ContentScale.Crop
+            )
+        }
+
+        Spacer(Modifier.height(24.dp))
+
+        Text(
+            text = "Flyme视效Pro",
+            style = MaterialTheme.typography.headlineMedium.copy(
+                color = MaterialTheme.colorScheme.primary,
+                fontWeight = FontWeight.Bold
+            )
+        )
+
+        Text(
+            text = "版本 1.0.0",
+            style = MaterialTheme.typography.bodyMedium.copy(
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            ),
+            modifier = Modifier.padding(top = 8.dp)
+        )
+
+        Spacer(Modifier.height(32.dp))
+
+        // 功能卡片组
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            AboutCard(
+                title = "使用说明",
+                icon = Icons.Default.Info,
+                onClick = { showInstructionsDialog = true }
+            )
+
+            AboutCard(
+                title = "赞助支持",
+                icon = Icons.Default.Favorite,
+                onClick = { showSponsorImage = true }
+            )
+
+            ContributorSection(
+                title = "开发贡献者",
+                contributors = contributors
+            )
+        }
+    }
+}
+
+@Composable
+private fun AboutCard(
+    title: String,
+    icon: ImageVector = Icons.Default.Info,
+    onClick: () -> Unit
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant
+        )
+    ) {
+        Row(
+            modifier = Modifier
+                .padding(16.dp)
+                .fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = title,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(24.dp)
+            )
+            Spacer(Modifier.width(16.dp))
+            Text(
+                text = title,
+                style = MaterialTheme.typography.bodyLarge.copy(
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+            )
+        }
+    }
+}
+
+@Composable
+private fun ContributorSection(
+    title: String,
+    contributors: List<Contributor>
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .shadow(4.dp, RoundedCornerShape(16.dp))
+            .background(MaterialTheme.colorScheme.surfaceVariant)
+            .padding(16.dp)
+    ) {
+        Text(
+            text = title,
+            style = MaterialTheme.typography.titleMedium.copy(
+                color = MaterialTheme.colorScheme.primary,
+                fontWeight = FontWeight.SemiBold
+            ),
+            modifier = Modifier.padding(bottom = 12.dp)
+        )
+
+        LazyColumn {
+            items(contributors) { contributor ->
+                ContributorItem(contributor = contributor)
+            }
+        }
+    }
+}
+
+@Composable
+private fun ContributorItem(contributor: Contributor) {
+    val context = LocalContext.current
+
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp)
+            .clickable {
+                val intent = Intent(Intent.ACTION_VIEW, Uri.parse(contributor.url))
+                context.startActivity(intent)
+            },
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface
+        )
+    ) {
+        Row(
+            modifier = Modifier.padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                imageVector = Icons.Default.Person,
+                contentDescription = "贡献者",
+                tint = MaterialTheme.colorScheme.primary
+            )
+            Spacer(Modifier.width(12.dp))
+            Text(
+                text = contributor.name,
+                style = MaterialTheme.typography.bodyMedium
+            )
+        }
+    }
+}
+
+data class Contributor(val name: String, val url: String)
+
 
 // 数据操作
 private suspend fun loadAllLists(
@@ -386,51 +744,9 @@ private suspend fun removePackage(pkg: String, key: String): List<String> {
     return newList
 }
 
-// 引导
-//三个页面
-//一个app info
-//一个权限shuzuki
-//一条欢迎
-@Composable
-private fun OnboardingPage(
-    title: String,
-    desc: String,
-    imageId: Int,
-    buttonText: String,
-    onAction: () -> Unit
-) {
-    Column(
-        Modifier
-            .fillMaxSize()
-            .padding(24.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
-    ) {
-        AnimatedVisibility(
-            visible = true,
-            enter = slideInVertically { it } + fadeIn(),
-            exit = slideOutHorizontally { it } + fadeOut()
-        ) {
-            Image(
-                painter = painterResource(imageId),
-                contentDescription = null,
-                modifier = Modifier.size(200.dp)
-            )
-        }
-        Spacer(Modifier.height(32.dp))
-        Text(title, style = MaterialTheme.typography.headlineMedium)
-        Spacer(Modifier.height(16.dp))
-        Text(desc, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        Spacer(Modifier.height(48.dp))
-        Button(onClick = onAction, modifier = Modifier.width(200.dp)) {
-            Text(buttonText)
-        }
-    }
-}
 
 @Composable
 private fun PermissionStep(onGranted: () -> Unit, onDenied: () -> Unit) {
-    val context = LocalContext.current
     var showError by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
@@ -446,9 +762,8 @@ private fun PermissionStep(onGranted: () -> Unit, onDenied: () -> Unit) {
             onDismissRequest = { showError = false },
             title = { Text("权限未授予") },
             text = { Text("必须授予Shizuku权限才能继续使用") },
-            confirmButton = {
-                TextButton(onClick = { showError = false }) { Text("确定") }
-            }
+            confirmButton = { TextButton(onClick = { showError = false }) { Text("确定") } },
+            shape = RoundedCornerShape(25.dp)
         )
     }
 
@@ -467,30 +782,11 @@ private fun PermissionStep(onGranted: () -> Unit, onDenied: () -> Unit) {
     )
 }
 
-@Composable
-private fun StepIndicator(current: Int, total: Int) {
-    Row(Modifier.padding(16.dp)) {
-        repeat(total) { index ->
-            Box(
-                Modifier
-                    .size(10.dp)
-                    .background(
-                        color = if (index == current - 1) MaterialTheme.colorScheme.primary
-                        else Color.LightGray,
-                        shape = CircleShape
-                    )
-            )
-            if (index < total - 1) Spacer(Modifier.width(8.dp))
-        }
-    }
-}
-
-// 检查权限，然后返回
+// 工具函数
 private fun checkShizukuPermission(): Boolean {
     return Shizuku.checkSelfPermission() == PackageManager.PERMISSION_GRANTED
 }
 
-//shuzuki cmd
 private suspend fun executeCommand(command: String): String {
     return try {
         val process = Shizuku.newProcess(arrayOf("sh", "-c", command), null, null)
@@ -501,20 +797,18 @@ private suspend fun executeCommand(command: String): String {
     }
 }
 
-
 private fun isOnboardingComplete(context: Context): Boolean {
-    val prefs = context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
-    return prefs.getBoolean("onboarding_complete", false)
+    return context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
+        .getBoolean("onboarding_complete", false)
 }
 
 private fun markOnboardingComplete(context: Context) {
     context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE).edit {
         putBoolean("onboarding_complete", true)
-        apply()
     }
 }
 
-private fun showPermissionDeniedAlert(context: android.content.Context) {
+private fun showPermissionDeniedAlert(context: Context) {
     androidx.appcompat.app.AlertDialog.Builder(context)
         .setTitle("权限被拒绝")
         .setMessage("需要Shizuku权限才能使用全部功能")
