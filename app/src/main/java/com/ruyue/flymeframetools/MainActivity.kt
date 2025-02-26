@@ -30,7 +30,6 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.core.content.edit
@@ -96,31 +95,23 @@ private fun OnboardingFlow(onComplete: () -> Unit) {
     val context = LocalContext.current
 
     Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surface)) {
-        Column(
-            modifier = Modifier.fillMaxSize(),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
-        ) {
-            when (currentStep) {
-                1 -> OnboardingPage(
-                    title = "FlymeFrameTools",
-                    desc = "由Shizuku驱动的Frame管理",
-                    imageId = R.drawable.icon_page,
-                    buttonText = "继续",
-                    onAction = { currentStep++ }
-                )
-                2 -> PermissionStep(
-                    onGranted = { currentStep++ },
-                    onDenied = { showPermissionDeniedAlert(context) }
-                )
-                3 -> OnboardingPage(
-                    title = "准备就绪",
-                    desc = "现在可以开始管理您的应用列表",
-                    imageId = R.drawable.icon_page,
-                    buttonText = "开始体验",
-                    onAction = onComplete
-                )
-            }
+        when (currentStep) {
+            1 -> OnboardingPage(
+                title = "FlymeFrameTools",
+                desc = "由Shizuku驱动的Frame管理",
+                buttonText = "继续",
+                onAction = { currentStep++ }
+            )
+            2 -> PermissionStep(
+                onGranted = { currentStep++ },
+                onDenied = { showPermissionDeniedAlert(context) }
+            )
+            3 -> OnboardingPage(
+                title = "准备就绪",
+                desc = "现在可以开始管理您的应用列表",
+                buttonText = "开始体验",
+                onAction = onComplete
+            )
         }
     }
 }
@@ -129,69 +120,87 @@ private fun OnboardingFlow(onComplete: () -> Unit) {
 private fun OnboardingPage(
     title: String,
     desc: String,
-    imageId: Int,
     buttonText: String,
     onAction: () -> Unit
 ) {
-    Column(
+    Box(
         modifier = Modifier
+            .fillMaxSize()
             .padding(24.dp)
-            .fillMaxWidth(),
-        horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Card(
+        // 左上方欢迎
+        Text(
+            text = "欢迎",
+            style = MaterialTheme.typography.headlineMedium.copy(
+                color = MaterialTheme.colorScheme.primary,
+            ),
+            modifier = Modifier.align(Alignment.TopStart)
+        )
+
+        // 中间内容区域
+        Column(
             modifier = Modifier
-                .height(280.dp)
                 .fillMaxWidth()
-                .shadow(8.dp, RoundedCornerShape(24.dp)),
-            shape = RoundedCornerShape(24.dp),
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceVariant
-            )
+                .align(Alignment.Center),
+            horizontalAlignment = Alignment.Start
         ) {
-            Image(
-                painter = painterResource(imageId),
-                contentDescription = null,
-                contentScale = ContentScale.Crop,
-                modifier = Modifier.fillMaxSize()
-            )
+            Row(
+                modifier = Modifier
+                    .padding(vertical = 16.dp)
+                    .fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Start
+            ) {
+                Spacer(modifier = Modifier.width(16.dp))
+                Column {
+                    Text(
+                        text = title,
+                        style = MaterialTheme.typography.headlineSmall.copy(
+                            color = MaterialTheme.colorScheme.primary,
+                            fontWeight = FontWeight.Bold
+                        )
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = desc,
+                        style = MaterialTheme.typography.bodyMedium.copy(
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f)
+                        )
+                    )
+                }
+            }
         }
 
-        Spacer(Modifier.height(32.dp))
-
-        Text(
-            text = title,
-            style = MaterialTheme.typography.headlineLarge.copy(
-                color = MaterialTheme.colorScheme.primary,
-                fontWeight = FontWeight.Bold
-            )
-        )
-
-        Spacer(Modifier.height(8.dp))
-
-        Text(
-            text = desc,
-            style = MaterialTheme.typography.bodyLarge.copy(
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f)
-            ),
-            modifier = Modifier.padding(horizontal = 24.dp),
-            textAlign = TextAlign.Center
-        )
-
-        Spacer(Modifier.height(32.dp))
-
-        Button(
-            onClick = onAction,
+        // 右下角继续按钮
+        Box(
             modifier = Modifier
-                .height(48.dp)
-                .width(200.dp),
-            shape = RoundedCornerShape(24.dp),
-            colors = ButtonDefaults.buttonColors(
-                containerColor = MaterialTheme.colorScheme.primary,
-                contentColor = MaterialTheme.colorScheme.onPrimary
-            )
+                .align(Alignment.BottomEnd)
+                .padding(bottom = 24.dp, end = 24.dp)
         ) {
-            Text(buttonText, style = MaterialTheme.typography.labelLarge)
+            Button(
+                onClick = onAction,
+                modifier = Modifier
+                    .height(48.dp)
+                    .width(150.dp),
+                shape = RoundedCornerShape(24.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary
+                )
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center
+                ) {
+                    Text(buttonText, style = MaterialTheme.typography.labelLarge)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Icon(
+                        imageVector = Icons.Default.ArrowForward,
+                        contentDescription = null,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+            }
         }
     }
 }
@@ -265,7 +274,6 @@ private fun MainContent() {
                     Text(
                         "Flyme视效Pro",
                         style = MaterialTheme.typography.headlineMedium.copy(
-                            fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.primary
                         )
                     )
@@ -365,7 +373,6 @@ private fun HomeContent(
             text = "应用列表管理",
             style = MaterialTheme.typography.titleLarge.copy(
                 color = MaterialTheme.colorScheme.primary,
-                fontWeight = FontWeight.Bold
             ),
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
         )
@@ -507,7 +514,6 @@ fun getAppName(pkg: String): String {
 
 @Composable
 private fun AboutContent() {
-    val context = LocalContext.current
     var showInstructionsDialog by remember { mutableStateOf(false) }
     var showSponsorImage by remember { mutableStateOf(false) }
     val contributors = listOf(
@@ -804,7 +810,6 @@ private fun PermissionStep(onGranted: () -> Unit, onDenied: () -> Unit) {
     OnboardingPage(
         title = "权限授权",
         desc = "请点击下方按钮授予Shizuku权限",
-        imageId = R.drawable.icon_page,
         buttonText = "立即授权",
         onAction = {
             when {
