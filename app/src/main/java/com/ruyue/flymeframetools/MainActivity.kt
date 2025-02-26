@@ -23,7 +23,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -216,6 +215,34 @@ private fun AppEntryPoint() {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun MainContent() {
+    val isShizukuRunning = remember { mutableStateOf(Shizuku.pingBinder()) }
+    val context = LocalContext.current
+
+    LaunchedEffect(Unit) {
+        // 定时检查Shizuku状态
+        while (true) {
+            isShizukuRunning.value = Shizuku.pingBinder()
+            kotlinx.coroutines.delay(1000)
+        }
+    }
+
+    if (!isShizukuRunning.value) {
+        AlertDialog(
+            onDismissRequest = {},
+            title = { Text("Shizuku未运行") },
+            text = { Text("请先启动Shizuku服务") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        context.startActivity(Intent(Intent.ACTION_VIEW).apply {
+                            data = Uri.parse("https://github.com/RikkaApps/Shizuku/releases")
+                        })
+                    }
+                ) { Text("前往下载") }
+            },
+        )
+        return
+    }
     var selectedTab by remember { mutableStateOf(0) }
     val tabs = listOf("主页", "关于")
 
@@ -717,13 +744,18 @@ private suspend fun loadAllLists(
 }
 
 private suspend fun loadPackageList(key: String): List<String> {
-    return if (checkShizukuPermission()) {
-        executeCommand("settings get global $key")
-            .split(",")
-            .filter { it.isNotEmpty() }
-            .distinct()
-    } else {
-        listOf("需要Shizuku权限")
+    return try {
+        if (!Shizuku.pingBinder()) return emptyList()
+        if (checkShizukuPermission()) {
+            executeCommand("settings get global $key")
+                .split(",")
+                .filter { it.isNotEmpty() }
+                .distinct()
+        } else {
+            emptyList()
+        }
+    } catch (e: Exception) {
+        emptyList()
     }
 }
 
@@ -749,7 +781,10 @@ private fun PermissionStep(onGranted: () -> Unit, onDenied: () -> Unit) {
 
     LaunchedEffect(Unit) {
         when {
-            Shizuku.isPreV11() -> onDenied()
+            !Shizuku.pingBinder() -> {
+                showError = true
+                onDenied()
+            }
             Shizuku.checkSelfPermission() == PackageManager.PERMISSION_GRANTED -> onGranted()
             else -> Shizuku.requestPermission(100)
         }
@@ -758,9 +793,10 @@ private fun PermissionStep(onGranted: () -> Unit, onDenied: () -> Unit) {
     if (showError) {
         AlertDialog(
             onDismissRequest = { showError = false },
-            title = { Text("权限未授予") },
-            text = { Text("必须授予Shizuku权限才能继续使用") },
-            confirmButton = { TextButton(onClick = { showError = false }) { Text("确定") } },
+            title = { Text("服务未启动") },
+            text = { Text("请先启动Shizuku服务并授予权限") },
+            confirmButton = {
+            },
             shape = RoundedCornerShape(25.dp)
         )
     }
@@ -772,6 +808,7 @@ private fun PermissionStep(onGranted: () -> Unit, onDenied: () -> Unit) {
         buttonText = "立即授权",
         onAction = {
             when {
+                !Shizuku.pingBinder() -> showError = true
                 Shizuku.checkSelfPermission() == PackageManager.PERMISSION_GRANTED -> onGranted()
                 Shizuku.shouldShowRequestPermissionRationale() -> showError = true
                 else -> Shizuku.requestPermission(100)
@@ -787,6 +824,7 @@ private fun checkShizukuPermission(): Boolean {
 
 private suspend fun executeCommand(command: String): String {
     return try {
+        if (!Shizuku.pingBinder()) return "Shizuku未运行"
         val process = Shizuku.newProcess(arrayOf("sh", "-c", command), null, null)
         process.waitFor()
         process.inputStream.bufferedReader().use { it.readText() }.trim()
