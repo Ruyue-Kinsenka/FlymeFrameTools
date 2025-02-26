@@ -106,7 +106,7 @@ private fun OnboardingFlow(onComplete: () -> Unit) {
                 1 -> OnboardingPage(
                     title = "FlymeFrameTools",
                     desc = "由Shizuku驱动的Frame管理",
-                    imageId = R.drawable.test,
+                    imageId = R.drawable.icon_page,
                     buttonText = "继续",
                     onAction = { currentStep++ }
                 )
@@ -117,7 +117,7 @@ private fun OnboardingFlow(onComplete: () -> Unit) {
                 3 -> OnboardingPage(
                     title = "准备就绪",
                     desc = "现在可以开始管理您的应用列表",
-                    imageId = R.drawable.test1,
+                    imageId = R.drawable.icon_page,
                     buttonText = "开始体验",
                     onAction = onComplete
                 )
@@ -484,9 +484,7 @@ private fun AboutContent() {
     var showInstructionsDialog by remember { mutableStateOf(false) }
     var showSponsorImage by remember { mutableStateOf(false) }
     val contributors = listOf(
-        Contributor("开发者", "temp"),
-        Contributor("设计支持", "temp"),
-        Contributor("测试团队", "temp")
+        Contributor("Ruyue", "https://github.com/Ruyue-Kinsenka"),
     )
 
     Column(
@@ -507,9 +505,9 @@ private fun AboutContent() {
                 },
                 text = {
                     Text(
-                        "1. 在主页添加需要优化的应用\n" +
-                                "2. 确保已授予Shizuku权限\n" +
-                                "3. 列表中的应用将自动应用优化设置",
+                        "1.使用后不要进入设置里的管理\n会自动重制为系统指定app\n" +
+                                "2. 确保已授予Shizuku权限\n"
+                                ,
                         style = MaterialTheme.typography.bodyMedium
                     )
                 },
@@ -534,7 +532,7 @@ private fun AboutContent() {
                         .height(360.dp)
                 ) {
                     Image(
-                        painter = painterResource(R.drawable.test),
+                        painter = painterResource(R.drawable.sponsor),
                         contentDescription = "赞助二维码",
                         contentScale = ContentScale.Crop,
                         modifier = Modifier.fillMaxSize()
@@ -551,8 +549,8 @@ private fun AboutContent() {
             shape = CircleShape
         ) {
             Image(
-                painter = painterResource(R.drawable.test),
-                contentDescription = "应用图标",
+                painter = painterResource(R.drawable.icon_page),
+                contentDescription = "logo",
                 contentScale = ContentScale.Crop
             )
         }
@@ -568,7 +566,7 @@ private fun AboutContent() {
         )
 
         Text(
-            text = "版本 1.0.0",
+            text = "1.0.0",
             style = MaterialTheme.typography.bodyMedium.copy(
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             ),
@@ -597,7 +595,7 @@ private fun AboutContent() {
             )
 
             ContributorSection(
-                title = "开发贡献者",
+                title = "开发者",
                 contributors = contributors
             )
         }
@@ -770,7 +768,7 @@ private fun PermissionStep(onGranted: () -> Unit, onDenied: () -> Unit) {
     OnboardingPage(
         title = "权限授权",
         desc = "请点击下方按钮授予Shizuku权限",
-        imageId = R.drawable.test2,
+        imageId = R.drawable.icon_page,
         buttonText = "立即授权",
         onAction = {
             when {
